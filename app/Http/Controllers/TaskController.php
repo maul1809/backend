@@ -34,9 +34,9 @@ class TaskController extends Controller
 
         $distance = null;
 
-        // Jembatan nembak ke Python FastAPI untuk hitung jarak otomatis
+        // Jembatan nembak ke Python FastAPI Cloud di Hugging Face
         try {
-            $response = Http::post('http://127.0.0.1:8000/api/hitung-jarak', [
+            $response = Http::post('https://maul1809-hitung-jarak-elektronikcare.hf.space/api/hitung-jarak', [
                 'latitude'  => $request->latitude,
                 'longitude' => $request->longitude,
             ]);
@@ -45,7 +45,7 @@ class TaskController extends Controller
                 $distance = $response->json()['distance_km'] ?? null;
             }
         } catch (\Exception $e) {
-            // Jika Python mati, biarkan distance bernilai null dulu agar aplikasi tidak crash
+            // Jika Python cloud down/mati, biarkan distance bernilai null dulu agar aplikasi tidak crash
             $distance = null;
         }
 
@@ -59,11 +59,11 @@ class TaskController extends Controller
             'longitude'          => $request->longitude,
             'distance_km'        => $distance,
             'status'             => 'pending', // Default awal dari migration lu
-            'cost'               => 0,         // Default awal 0 rupiah
+            'cost'               => 0,            // Default awal 0 rupiah
         ]);
 
         return response()->json([
-            'message' => 'Tugas berhasil dibuat dan Jarak dihitung otomatis oleh Python!',
+            'message' => 'Tugas berhasil dibuat dan Jarak dihitung otomatis oleh Python Cloud!',
             'data'    => $task
         ], 201);
     }
