@@ -11,8 +11,9 @@ use App\Http\Controllers\TaskController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+
 // ==========================================
-// ROUTE PRIVAT (Wajib menyertakan Bearer Token di Postman)
+// ROUTE PRIVAT (Wajib menyertakan Bearer Token)
 // ==========================================
 Route::middleware('auth:sanctum')->group(function () {
     
@@ -28,9 +29,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // 1. Lihat semua tugas (Dipakai Admin/Teknisi/Customer)
     Route::get('/tasks', [TaskController::class, 'index']);            
     
-    // 2. Buat tugas baru + Hitung jarak Python (Ditembak dari APK Customer)
-    Route::post('/tasks', [TaskController::class, 'store']);            
-    
+    // 2. Buat tugas baru + Hitung jarak Python (Sudah Masuk Group Auth Lagi)
+    Route::post('/tasks', [TaskController::class, 'store']); 
+
     // 3. Update status & biaya tugas (Ditembak dari APK Teknisi pas kerja/selesai)
     Route::put('/tasks/{id}/update-status', [TaskController::class, 'updateStatus']); 
 });
