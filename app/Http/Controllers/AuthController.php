@@ -10,32 +10,59 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    /**
-     * 1. FITUR REGISTER AKUN
-     */
     public function register(Request $request)
     {
-        // Validasi input dari Postman
+        // Validasi diperlonggar agar tidak langsung memblokir jika key bertabrakan format
         $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6',
-            'role'     => 'required|in:admin,technician,customer', // membatasi role sesuai database
+            'name'     => 'required',
+            'password' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'success' => false,
+                'errors'  => $validator->errors()
+            ], 422);
         }
 
-        // Simpan ke tabel users
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password), // Enkripsi password
-            'role'     => $request->role,
-        ]);
+        // AMBIL DATA DENGAN MENCOCOKKAN HTML IONIC (CamelCase & SnakeCase dicover semua)
+        $email         = $request->input('email') ?? $request->input('Email') ?? null;
+        $phone         = $request->input('phone') ?? $request->input('nomor_telepon') ?? '-';
+        $tempat_lahir  = $request->input('tempatLahir') ?? $request->input('tempat_lahir') ?? '-';
+        $tanggal_lahir = $request->input('tanggal_lahir') ?? $request->input('tanggalLahir') ?? date('Y-m-d');
+        $nik           = $request->input('nik') ?? $request->input('NIK') ?? '-';
+        $alamat        = $request->input('alamat') ?? $request->input('alamat_lengkap') ?? '-';
 
-        // Generate token Sanctum biar setelah register bisa langsung otomatis login (opsional)
+        // VALIDASI EMAIL MANUAL (Supaya pesannya jelas kalau email beneran gak dikirim dari TS)
+        if (empty($email)) {
+            return response()->json([
+                'success' => false,
+                'errors'  => ['email' => ['Data email tidak terkirim dari aplikasi Ionic, periksa payload di register.page.ts lu Mad!']]
+            ], 422);
+        }
+
+        // Proteksi jika email duplikat di database
+        $userExists = User::where('email', $email)->exists();
+        if ($userExists) {
+            return response()->json([
+                'success' => false,
+                'errors'  => ['email' => ['Email ini sudah terdaftar di database, silahkan gunakan email lain.']]
+            ], 422);
+        }
+
+        // Eksekusi Simpan Langsung ke Kolom Database
+        $user = new User();
+        $user->name         = $request->input('name');
+        $user->email        = $email;
+        $user->password     = Hash::make($request->input('password'));
+        $user->phone        = strval($phone);
+        $user->tempat_lahir = $tempat_lahir;
+        $user->tanggal_lahir= $tanggal_lahir;
+        $user->nik          = strval($nik);
+        $user->alamat       = $alamat;
+        $user->role         = $request->input('role') ?? 'teknisi';
+        $user->save();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -47,33 +74,26 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * 2. FITUR LOGIN AKUN
-     */
     public function login(Request $request)
     {
-        // Validasi input email dan password
         $validator = Validator::make($request->all(), [
-            'email'    => 'required|string|email',
-            'password' => 'required|string',
+            'email'    => 'required',
+            'password' => 'required',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        // Cari user berdasarkan email
         $user = User::where('email', $request->email)->first();
 
-        // Cek apakah user ada dan password-nya cocok
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email atau password salah, silakan cek kembali.'
+                'message' => 'Email atau password salah.'
             ], 401);
         }
 
-        // Generate token baru dari Sanctum untuk dipasang di Postman nanti
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -81,7 +101,7 @@ class AuthController extends Controller
             'message'      => 'Login berhasil!',
             'access_token' => $token,
             'token_type'   => 'Bearer',
-            'role'         => $user->role, // mengembalikan role untuk hak akses frontend
+            'role'         => $user->role, 
             'user'         => $user
         ], 200);
     }
