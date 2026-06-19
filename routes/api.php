@@ -3,8 +3,9 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\TaskController;     // <-- Sudah dikoreksi ditambah \Api
-use App\Http\Controllers\Api\TrackingController; // <-- Sudah dikoreksi ditambah \Api
+use App\Http\Controllers\Api\TaskController;     
+use App\Http\Controllers\Api\TrackingController; 
+use Illuminate\Support\Facades\Artisan;
 
 // ==========================================
 // ROUTE PUBLIK (Bisa diakses tanpa login/token)
@@ -24,7 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // ------------------------------------------
-    // MODUL 1: TASK MANAGEMENT (Sesuai SRS Bab 3.2)
+    // MODUL 1: TASK MANAGEMENT 
     // ------------------------------------------
     
     // 1. Lihat semua tugas AKTIF yang belum selesai (Web Admin & Mobile Teknisi)
@@ -38,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // ------------------------------------------
-    // MODUL 2: HISTORI PEKERJAAN (Sesuai BRD Bab 9.1)
+    // MODUL 2: HISTORI PEKERJAAN 
     // ------------------------------------------
     
     // 4. Ambil riwayat tugas yang sudah selesai/ditolak (completed / rejected)
@@ -46,7 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     // ------------------------------------------
-    // MODUL 3: REALTIME TRACKING TEKNISI (Sesuai SRS Bab 5.4)
+    // MODUL 3: REALTIME TRACKING TEKNISI 
     // ------------------------------------------
     
     // 5. Kirim koordinat GPS HP Teknisi secara berkala dari Ionic ke Backend
@@ -54,4 +55,17 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // 6. Ambil koordinat TERAKHIR teknisi untuk digambar ke OpenStreetMap Web Admin (BARU)
     Route::get('/tracking/latest/{task_id}', [TrackingController::class, 'getLatestLocation']);
+});
+
+
+// ==========================================
+//  PEMBERSIH CACHE & REFRESH SISTEM
+// ==========================================
+Route::get('/artisan-fms', function() {
+    // Bersihkan semua jenis cache 
+    Artisan::call('config:clear');
+    Artisan::call('cache:clear');
+    Artisan::call('route:clear');
+    
+    return "Sistem dibersihkan!";
 });
